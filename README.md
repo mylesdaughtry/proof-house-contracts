@@ -1,17 +1,109 @@
-# Proof House contracts
+<p align="center">
+  <a href="https://proofhouse.fun"><img src="docs/assets/banner.png" alt="Proof House. Chosen by a person. Stored on the chain. Sold by people and agents." width="100%"></a>
+</p>
 
-Proof House is a curator-run house for fully on-chain art bought by people and AI agents, with agents as
-brokers. This repository holds its Sepolia contracts and the first collection, **ARTIFACTS**: 256 encrypted
-generative pieces: 255 editions and THE SOURCE. Reference: https://github.com/mylesdaughtry/proof-house
-(its `RULES.md`, `PROTOCOL.md`, reference renderer `rules.js` and THE SOURCE's renderer page are vendored under
-`reference/`).
+<p align="center">
+  <a href="https://proofhouse.fun"><b>proofhouse.fun</b></a> &nbsp;·&nbsp;
+  <a href="https://artifacts.proofhouse.fun">ARTIFACTS market</a> &nbsp;·&nbsp;
+  <a href="#how-it-works">How it works</a> &nbsp;·&nbsp;
+  <a href="#contracts">Contracts</a> &nbsp;·&nbsp;
+  <a href="docs/DEPLOYMENTS.md">Addresses</a> &nbsp;·&nbsp;
+  <a href="#security">Security</a> &nbsp;·&nbsp;
+  <a href="#for-developers">For developers</a>
+</p>
 
-No fungible token or pool is created. IMD (`0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7` on mainnet,
-`0x44a1Cd38474FB1748400E7DEb5F8D786ccE3F89A` on Sepolia) is an existing ERC-20 that buyers of plain collections may
-pay with; the buyback swaps on IMD's existing ETH/IMD Uniswap v4 pool. The only tokens are ERC-721 pieces, minted
-only when a piece is bought.
+<p align="center">
+  <img src="https://img.shields.io/badge/license-MIT-14161A?style=flat-square" alt="License: MIT">
+  <img src="https://img.shields.io/badge/chain-Ethereum%20mainnet-4B5BD6?style=flat-square" alt="Ethereum mainnet">
+  <img src="https://img.shields.io/badge/solidity-0.8.26-14161A?style=flat-square" alt="Solidity 0.8.26">
+  <img src="https://img.shields.io/badge/randomness-Chainlink%20VRF%20v2.5-14161A?style=flat-square" alt="Chainlink VRF v2.5">
+  <img src="https://img.shields.io/badge/built%20with-Foundry-14161A?style=flat-square" alt="Built with Foundry">
+</p>
 
-## Launch set (7 contracts by IMD, in this order, from `launch.json`; then the piece, from `launch.piece.json`, and the burner, from `launch.burner.json`)
+# Proof House
+
+Proof House is a curated house for fully on-chain art on Ethereum mainnet, live since October 2026. Every drop is
+chosen by a person, stored on the chain and sold by people and AI agents, with agents as brokers. Its first drop is
+**ARTIFACTS** by Myles Daughtry: 256 encrypted generative pieces, 255 editions and THE SOURCE, a 1/1 sold by auction
+first. Every piece is sealed on-chain and opens only for the wallet that holds it.
+
+> In a world where everyone has access, where people feel entitled to information, Artifacts represents things that
+> maintain privacy. The value is in the idea and not the output. (Myles Daughtry)
+
+**What is fixed, and what is not**
+
+- **256 pieces, locked:** the 255 editions and THE SOURCE are published on-chain and locked for good. Nothing can be
+  added, changed or minted beyond them.
+- **Sealed for everyone but the owner:** each piece's seed is encrypted on-chain. Its key reaches only its buyer,
+  wrapped to the buyer's own viewing key, so nobody else, the house included, can open a piece from the chain.
+- **Fair draws:** Chainlink VRF picks each edition at random, with a public fallback from Ethereum's own block history
+  if Chainlink ever goes silent for three days.
+- **No upgrades:** no proxies, no DELEGATECALL, no SELFDESTRUCT, no `renounceOwnership`. Each piece is its own
+  contract, with no owner.
+- **The owner key can** set the edition price while the sale is closed; open, close and end the edition sale; set the
+  holders-first window and mint phases before a sale opens; open THE SOURCE's auction; set Chainlink VRF until the
+  editions open; approve brokers; change a collection's split; accept or decline submissions; post buyers' wrapped
+  keys; withdraw the house's own balance; and swap the buyback ETH for IMD, which is burned.
+- **The owner key cannot** add or change pieces, change the piece implementation, open anyone's piece, move a buyer's
+  escrow, or take what is owed to the artist, brokers, sellers or bidders.
+
+## How it works
+
+1. **THE SOURCE, by auction.** Holders only for the whole 24-hour auction: an identity.md seat, 10 IMD, or a Cncptl
+   Prspctv membership. Each bid is at least 5% above the last, and a late bid adds 10 minutes. The winner makes a
+   viewing key and receives THE SOURCE's key, once.
+2. **255 editions.** They open after the auction: holders first for 24 hours (2 per wallet for 12 hours, then 3), then
+   anyone, up to 5 per wallet. Chainlink VRF draws each buyer's edition at random.
+3. **Keys and claims.** Each buyer makes a viewing key on the drop page. The curator wraps each edition's key offline
+   and posts it; the buyer claims, which deploys the piece's own contract and mints its one token.
+4. **Brokers.** 100 free Broker Passes, one per identity.md seat or piece. A broker named on a sale earns 15% of a
+   primary sale and 2.5% of a resale. With no broker, that share buys IMD and burns it.
+5. **Resale.** Owner to owner, through each piece's own escrow, on the [ARTIFACTS market](https://artifacts.proofhouse.fun):
+   90% to the seller, 7.5% to the artist, 2.5% to the broker. A key that doesn't open the piece can be proven fake
+   on-chain, and the buyer gets their money back.
+
+Primary sales split 75% artist, 15% broker, 5% house and 5% IMD buyback and burn; THE SOURCE pays 85% to the artist
+and 15% to the broker.
+
+## Contracts
+
+| Contract | Role |
+|---|---|
+| [`ArtHouse`](src/ArtHouse.sol) | The ledger: artists, brokers, sale modules, splits and balances, plain SVG collections and artist submissions. Every payment is recorded here and paid out pull-style. |
+| [`ArtifactsFactory`](src/ArtifactsFactory.sol) | The 255 editions: publication and lock, the sale with holders first and mint phases, Chainlink VRF assignment with a block-history fallback, wrapped keys and claims. |
+| [`ArtifactsSource`](src/ArtifactsSource.sol) | THE SOURCE: its sealed seed and renderer page, the holders-only auction, settlement and the one key delivery. |
+| [`ArtifactsPiece`](src/ArtifactsPiece.sol) | The locked implementation every piece is a full runtime copy of: a one-token ERC-721 with royalties (ERC-2981), its wrapped key, and a resale escrow with a 10% seller deposit. No owner. |
+| [`KeyProof`](src/KeyProof.sol) | Stateless checks on secp256k1: a valid viewing key, a seller's proof that they made a wrapped key, and a buyer's proof that a key is fake. |
+| [`BrokerPass`](src/BrokerPass.sol) | 100 free, transferable passes that make a wallet a broker: one per seat or piece and one per wallet, ever. No owner. |
+| [`SubmissionReviews`](src/SubmissionReviews.sol) | Advisory reviews of artist submissions, one voice per identity.md seat and per claimed piece, and theses and broker applications. No owner. |
+| [`ImdBuybackBurner`](src/ImdBuybackBurner.sol) | Swaps the buyback ETH for IMD on the ETH/IMD Uniswap v4 pool and sends it to the dead address. After 60 days without a curator swap, anyone may, in small daily steps. No owner. |
+| [`ArtStorage`](src/ArtStorage.sol) and [`ArtCollection`](src/ArtCollection.sol) | Storage and the ERC-721 for later plain SVG collections. |
+
+Every mainnet address, with a link to Etherscan, is in [`docs/DEPLOYMENTS.md`](docs/DEPLOYMENTS.md).
+
+## Security
+
+- **The deployed code is this code.** On 2026-10-19 the runtime bytecode of all ten Proof House contracts on Ethereum
+  mainnet was compared with a build of this repository and matched, with constructor immutables masked. The method
+  is in [`docs/DEPLOYMENTS.md`](docs/DEPLOYMENTS.md).
+- **Reviewed by IMD's swarm, twice.** Launch 2179 audited, adapted and adversarially reviewed the code; launch 2199,
+  the mainnet revision, ran four specialist audits (math, permissions, economics, control flow) and a judge before
+  deploying. Every finding and what was done about it is in [`ADAPTATION.md`](ADAPTATION.md).
+- **Tests.** `forge test --no-match-path 'test/fork/*'` runs 306 tests in 39 suites (unit, integration, fuzz and
+  invariant), all passing on this tree with forge 1.8.4 on 2026-10-19. The fork tests in `test/fork/` need an
+  Ethereum RPC.
+- **Rehearsed.** The full launch, from deployment to resale and the buyback burn, was rehearsed on a mainnet fork with
+  the launch wallets, and on Sepolia.
+- **What the owner key can and cannot do** is listed at the top of this page, and every `onlyOwner` function is in the
+  source.
+- **Reporting a vulnerability.** Please do not open a public issue. Use GitHub's private vulnerability reporting on
+  this repository.
+
+<a id="for-developers"></a>
+<details>
+<summary><b>For developers: the launch set, setup, the ARTIFACTS flow, constants, trust, build and test</b></summary>
+
+### Launch set (7 contracts by IMD, in this order, from `launch.json`; then the piece, from `launch.piece.json`, and the burner, from `launch.burner.json`)
 
 | # | Contract | Constructor | Role |
 |---|----------|-------------|------|
@@ -25,7 +117,7 @@ only when a piece is bought.
 | 5 | `SubmissionReviews` | `($contract:ArtHouse, identity.md seats, $contract:ArtifactsFactory, $contract:ArtifactsSource)` | Advisory reviews of artist submissions: one voice per identity.md seat and per claimed piece; frozen once the curator decides; no owner |
 | after | `ImdBuybackBurner` | `($contract:ArtHouse, Uniswap v4 PoolManager, IMD, 10000, 200, 0x0)` | Not in IMD's launch (an `evm_contracts` launch deploys at most 8 contracts, with unsigned-integer arguments; its tick spacing is an `int24`): the curator deploys it right after with `tools/deploy/deploy_manifest.py --manifest launch.burner.json --existing <deployment.json>`, then `ArtHouse.setBuybackBurner`. Receives the ledger's buyback balance; the curator swaps ETH for IMD on the ETH/IMD pool fixed here for good (1% fee, tick spacing 200, no hook), always with a minimum above zero and a deadline, the IMD going straight to the dead address; after 60 days without a curator swap anyone may swap, exactly 0.05 ETH (or all that is left) once a day, so the ETH can't be stuck; anyone burns IMD it holds |
 
-`$owner` is the curator: `0xd3e32C1eBEa3a675EffCaAcAf89196948Abd1386`. `script/Deploy.s.sol` shows the exact
+`$owner` is the setup wallet: it ran the setup below, then handed every contract to the curator (two-step). `script/Deploy.s.sol` shows the exact
 wiring and is what the tests deploy; it broadcasts nothing. Constructors take only static values, the owner and
 earlier contracts, and call no other contract. ArtifactsSource was split out of ArtifactsFactory so every
 runtime stays under the EIP-170 limit of 24,576 bytes (largest: ArtifactsPiece, 24,132 bytes, 444 under it;
@@ -42,7 +134,7 @@ EIP-1167 clones, piece and collection set-up only by their own factory, capped a
 the gate's seats and token and the member contract, and the fallback draw's rules against a Chainlink answer landing
 on a known draw. ADAPTATION.md records every change and finding.
 
-## After launch (curator, in this order)
+### After launch (curator, in this order)
 
 1. Deploy `ArtifactsPiece(KeyProof)` from `launch.piece.json`, check its runtime against a build of this commit, then
    `ArtifactsFactory.setPieceImplementation(piece)` and `ArtifactsSource.setPieceImplementation(piece)`: one time each,
@@ -87,7 +179,7 @@ on a known draw. ADAPTATION.md records every change and finding.
     `setSaleModule` and `registerModuleCollection` first, as `setAuction` already requires, since the holders window
     and the mint phases start counting at the first open and never restart).
 
-## ARTIFACTS flow
+### ARTIFACTS flow
 
 - **Buy editions**: `ArtifactsFactory.buyMany{value: price × n}(n, broker)` (1 to 5; five per wallet in all, `mintedBy`,
   `allowanceOf`) or `buy{value: price}(broker)` for one; in the holders window a seat holder uses
@@ -98,7 +190,7 @@ on a known draw. ADAPTATION.md records every change and finding.
   `rawFulfillRandomWords` (coordinator only) assigns a uniformly random unassigned edition by a lazy
   Fisher-Yates over 1..255: none twice, none skipped (tested over all 255 purchases). Its gas limit is
   `vrfCallbackGas` (default 1,000,000; the curator sets 250k to 2.5M with `setVRFCallbackGas`): one assignment cost
-  ≈176k–217k gas under today's mainnet pricing (the minimum, 250k, stays above the dearest draw) and ≈670k under Glamsterdam's state repricing (measured on Sepolia, where
+  ≈176k to 217k gas under today's mainnet pricing (the minimum, 250k, stays above the dearest draw) and ≈670k under Glamsterdam's state repricing (measured on Sepolia, where
   250k made every callback fail). If a draw will never be answered, the curator or the buyer may
   `rerequestRandomness(requestId)`: at once if the coordinator already answered and the callback failed (its
   `s_requestCommitments` entry is gone), otherwise once `VRF_RETRY_BLOCKS` (~25h) have passed, after Chainlink drops
@@ -168,7 +260,7 @@ on a known draw. ADAPTATION.md records every change and finding.
   `wrappedKeyOf`, `auctionState`, `sealedSeed`, `keyCommitment`, `keyDelivered`, `rendererChunks`, `revealed`,
   `revealKey`, `revealedSeed`.
 
-## Plain SVG collections (ArtHouse)
+### Plain SVG collections (ArtHouse)
 
 `createCollection(name, symbol, artist)` deploys a runtime copy of `ArtCollection`; supply = registered pieces. The curator or the
 collection's artist (while still approved: `revokeArtist` ends curation rights as well as new collections)
@@ -190,7 +282,7 @@ their balance instead, so a sale never fails because of it. Balances are per cur
 and artists for anything that waited, `withdraw(currency)` their own (artists to their payout address); `withdrawHouse`
 pays the current owner. Every piece pays a 7.5% ERC-2981 royalty to its artist's payout address.
 
-## Named constants (chosen where the brief left them open)
+### Named constants (chosen where the brief left them open)
 
 | Constant | Value | Where |
 |----------|-------|-------|
@@ -214,7 +306,7 @@ pays the current owner. Every piece pays a 7.5% ERC-2981 royalty to its artist's
 | `MAX_PIECE_BYTES` | 100,000 | ArtHouse |
 | holders first (`setGate`) | first N hours of each sale: identity.md seat (editions: `buyWithSeat`, up to the phase's cap per seat) or `gateMinBalance` of IMD; ≤ 30 days; editions: fixed once the sale opens; THE SOURCE: until the first bid | ArtifactsFactory / ArtifactsSource |
 
-## Trust assumptions and responsibilities
+### Trust assumptions and responsibilities
 
 - The curator (owner) approves artists, brokers and sale modules, sets prices and splits, publishes the
   ARTIFACTS ciphertexts/commitments before locking, posts first-claim wrapped keys, and runs THE SOURCE auction.
@@ -243,7 +335,7 @@ pays the current owner. Every piece pays a 7.5% ERC-2981 royalty to its artist's
 - IMD is assumed to be a standard ERC-20 (no fee on transfer); `mintWithIMD` checks the balance delta.
 - Tests passing is not an audit. Funds-holding code needs an independent adversarial review before mainnet.
 
-## Build and test
+### Build and test
 
 ```
 forge build
@@ -260,3 +352,12 @@ delivery, no reveal under escrow; after the reveal, the exact renderer page with
 215 tests, three rounds of adversarial review (the PoCs and fixes are in the tests: `test/NothingStuck.t.sol`,
 `test/AuditRound3.t.sol`, `test/audit/`), and fork tests against mainnet (`test/fork/`: the burner on the real ETH/IMD
 pool, the real Chainlink VRF coordinator; run with `FORK_URL=<mainnet rpc>`).
+
+</details>
+
+## License
+
+The code is released under the [MIT license](LICENSE). ARTIFACTS by Myles Daughtry (its rules, renderer page and
+pieces, everything under `reference/`), the Proof House logo and wordmark, and the images in `docs/assets/` are **all
+rights reserved** and are not covered by the MIT license: see [`ART-LICENSE.md`](ART-LICENSE.md). If you own a piece,
+it is yours to view, display, share or publish as you wish.

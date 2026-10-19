@@ -19,7 +19,7 @@ operational value was replaced with a fabricated production address or identifie
 This section records the changes of this revision relative to the accepted tree
 (commit d379142). The sections below it are the earlier rounds' notes, kept as history.
 
-### 180a7e1d59e1 — the 8-contract launch exceeds EIP-7825's per-transaction gas cap: reproduced and fixed
+### 180a7e1d59e1: the 8-contract launch exceeds EIP-7825's per-transaction gas cap: reproduced and fixed
 
 Full id: `180a7e1d59e12e6b95c6128645a5b9badf44dc0bd123c8ea45343cd28e7776fc`.
 
@@ -91,7 +91,7 @@ build of this commit (as they do for every launched contract) before `setPieceIm
 Buyers can read `pieceImplementation()` on the factory and the source and compare it the
 same way. A wrong address cannot be corrected: a second call reverts.
 
-### a0cc401d2e36 — resale key posted after SELLER_WINDOW (the imported audit): already fixed in the accepted tree
+### a0cc401d2e36: resale key posted after SELLER_WINDOW (the imported audit): already fixed in the accepted tree
 
 Reproduced on the tree as it arrived in the previous round and fixed there (the
 `TooLate` deadline in `postEscrowKey`, `test/EscrowDeadline.t.sol`, see the next section).
@@ -142,7 +142,7 @@ This section records the changes in this assignment relative to the supplied,
 previously reviewed tree. The review rounds below are retained historical notes;
 their changes, sizes and test counts are not changes or results from this run.
 
-### a0cc401d2e36 — late escrow key posting: reproduced and fixed
+### a0cc401d2e36: late escrow key posting: reproduced and fixed
 
 Full finding id:
 `a0cc401d2e36398a456f5b5fd8bc801aa04d750f3210a0c7cc636ee7185f4659`.
@@ -251,7 +251,7 @@ ones. Each was reproduced before anything changed; the answers are in
 outside the reported paths, and no manifest, constructor, configuration or
 dependency changed.
 
-### 07f1616add6c — fallback draw on a request Chainlink still holds: fixed
+### 07f1616add6c: fallback draw on a request Chainlink still holds: fixed
 
 The supplied proof failed on the accepted tree: at purchase + `FALLBACK_BLOCKS` a
 buyer re-requested their draw and started the fallback on the fresh request in
@@ -278,7 +278,7 @@ the coordinator answered the young request but the callback failed. Regressions:
 `test_noChainlinkAnswerOnceTheFallbackHashIsPublic`,
 `testFuzz_theFallbackResultStandsAgainstAnyLateWord`).
 
-### 20ca2ef1fdca — code-less gate address reverts every gated buy or bid: fixed
+### 20ca2ef1fdca: code-less gate address reverts every gated buy or bid: fixed
 
 The supplied proof failed on the accepted tree in all three cases. Solidity's
 `try/catch` only catches the callee's revert; a code-less token returns no data,
@@ -300,7 +300,7 @@ and a non-holder refused `NotEligible`; code-less seats; a dirty `ownerOf` word;
 real seat contract unchanged; THE SOURCE's window with code-less seats and token;
 a fuzz that the gate views never revert for any addresses.
 
-### 07bde3893de7 (advisory) — dead fallback draw strands the re-request: fixed
+### 07bde3893de7 (advisory): dead fallback draw strands the re-request: fixed
 
 Reproduced by test: once a started draw's hash left BLOCKHASH and the EIP-2935
 history unread, `finishFallbackDraw` reverted `FallbackMissed`, `rerequestRandomness`
@@ -353,7 +353,7 @@ assert unchanged behaviour pass there.
 
 ## Reproduced findings and their disposition (round 1, the imported audit)
 
-### b0f3f99d54ac — generated ERC-721 proxies: fixed
+### b0f3f99d54ac: generated ERC-721 proxies: fixed
 
 Both tests in the supplied `Proof_b0f3f99d54ac.t.sol` failed on the original code:
 the generated plain collection and claimed edition contained DELEGATECALL. Both
@@ -383,7 +383,7 @@ Tests: the supplied two-test proof, plus
 test compare runtime copies, check independent ownership/storage, and scan the
 generated code with the protected check's exact PUSH-skipping algorithm.
 
-### 5fab1872a919 — owner configuration after deployment: retained as requested
+### 5fab1872a919: owner configuration after deployment: retained as requested
 
 The reported initial state reproduces: ArtStorage has no house, the ledger has no
 BrokerPass or registered modules, sales are closed, and pass claims are closed.
@@ -398,7 +398,7 @@ requested launch. No such change was made. Each of the eight existing constructo
 is nonpayable, uses supported static arguments, and succeeds without dependency
 code. The factories receive no administrative privileges.
 
-### 76d2a83f2f13 — unauthenticated copy initialization: fixed
+### 76d2a83f2f13: unauthenticated copy initialization: fixed
 
 On the original code, an attacker initialized an independent copy naming the real
 ArtifactsFactory, ArtifactsSource or ArtHouse as controller. The new tests expecting
@@ -430,7 +430,7 @@ Public NFT code and names can still be copied. Authenticity continues to require
 the project's canonical registries; this fix prevents the supplied implementation
 from being initialized by an attacker while naming a different, real controller.
 
-### ab923af3c52f — broken BrokerPass blocks sales: fixed
+### ab923af3c52f: broken BrokerPass blocks sales: fixed
 
 Before the change, an EOA configured as BrokerPass made edition purchases and
 THE SOURCE settlement with an unapproved nonzero broker revert. A reverting pass
@@ -452,7 +452,7 @@ explicitly approved brokers, zero brokers, failed/short/oversized/gas-exhausting
 responses, and valid zero/nonzero balances. The existing BrokerPass tests continue
 to exercise real pass-holder primary and resale commissions.
 
-### b93e09f36b44 — dynamic member result bypasses the gate: fixed
+### b93e09f36b44: dynamic member result bypasses the gate: fixed
 
 Calling the mock ERC-20's `name()` with the wallet appended reproduced the dynamic
 ABI offset being counted as points. Both the edition and source window regression
@@ -470,7 +470,7 @@ The owner must still select a semantically correct points function. A single-wor
 boolean and integer cannot be distinguished by their ABI encoding; the fix does
 not claim to infer the intended semantics of an arbitrary selector.
 
-### a85c2484bf00 — constructor-created ArtCollection template: retained and checked
+### a85c2484bf00: constructor-created ArtCollection template: retained and checked
 
 This observation reproduces: ArtHouse creates a ninth contract, its locked
 ArtCollection template, in addition to the eight manifest entries. It is now a
@@ -483,7 +483,7 @@ detail. Removing it would change the requested constructor/collection design.
 addresses, is locked, is below EIP-170, and passes the same opcode scan as the
 manifest runtimes. The existing README launch table already discloses its creation.
 
-### 015b0e5b53ba — curator powers: retained and documented
+### 015b0e5b53ba: curator powers: retained and documented
 
 These are intended powers, not authorization bypasses. The new regression test
 reproduces closing a primary sale while claims and transfers remain possible, and
